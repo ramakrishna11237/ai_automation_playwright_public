@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Test artifacts — never commit
+test-results/
+*.png
+*.webm
+*.zip
+*.har
+
+# Environment — contains credentials
+.env
+
+# Logs
+*.log
+
+# Learning DB — contains app-specific locators, not for public repo
+learning-db.json
+learning-db.json.bak
+learning-db.json.tmp
+
+# Session files — may contain auth tokens
+src/test-results/
+# orangehrm-session.json is intentionally kept (public demo site only)
+**/*-session.json
+**/*.session.json
+!test-results/sessions/orangehrm-session.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Presentation and document files — keep local only
+*.pptx
+*.ppt
+*.docx
+*.doc
+PPT_CONTENT.txt
+MANAGEMENT_PRESENTATION.md

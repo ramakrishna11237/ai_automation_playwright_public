@@ -1,0 +1,114 @@
+{
+  "Framework Step — Click": {
+    "prefix": "fwclick",
+    "body": [
+      "{ label: \"Click ${2:element name} ${3|button,link,tab,menu item|}\", action: \"click\", codegenLocator: \"${1:getByRole('button', { name: '$2' })}\" }$0"
+    ],
+    "description": "Framework click step with auto-label from element name"
+  },
+
+  "Framework Step — Fill": {
+    "prefix": "fwfill",
+    "body": [
+      "{ label: \"Fill ${2:field name} field\", action: \"fill\", codegenLocator: \"${1:getByRole('textbox', { name: '$2' })}\", value: \"${3}\" }$0"
+    ],
+    "description": "Framework fill step with auto-label"
+  },
+
+  "Framework Step — Assert Visible": {
+    "prefix": "fwassert",
+    "body": [
+      "{ label: \"Verify ${2:element name} visible\", action: \"assertVisible\", codegenLocator: \"${1:getByRole('heading', { name: '$2' })}\" }$0"
+    ],
+    "description": "Framework assertVisible step with auto-label"
+  },
+
+  "Framework Step — Assert Text": {
+    "prefix": "fwtext",
+    "body": [
+      "{ label: \"Verify ${2:element} text\", action: \"assertText\", codegenLocator: \"${1}\", expectedText: \"${3}\" }$0"
+    ],
+    "description": "Framework assertText step"
+  },
+
+  "Framework Step — Navigate": {
+    "prefix": "fwnav",
+    "body": [
+      "{ label: \"Navigate to ${1:page name}\", action: \"navigate\", expectedUrl: \"${2}\" }$0"
+    ],
+    "description": "Framework navigate step"
+  },
+
+  "Framework Step — Dropdown": {
+    "prefix": "fwdrop",
+    "body": [
+      "{ label: \"Select ${3:option} from ${2:dropdown name}\", action: \"dropdown\", locator: \"${1}\", value: \"${3}\" }$0"
+    ],
+    "description": "Framework dropdown step"
+  },
+
+  "Framework Step — Wait Network": {
+    "prefix": "fwwait",
+    "body": [
+      "{ label: \"Wait for network\", action: \"waitForNetwork\" }$0"
+    ],
+    "description": "Framework waitForNetwork step"
+  },
+
+  "Framework Step — Soft Assert": {
+    "prefix": "fwsoft",
+    "body": [
+      "{ label: \"Verify ${2:element} visible (soft)\", action: \"assertVisible\", codegenLocator: \"${1}\", soft: true }$0"
+    ],
+    "description": "Framework soft assertion step"
+  },
+
+  "Framework Step — Screenshot": {
+    "prefix": "fwshot",
+    "body": [
+      "{ label: \"Screenshot ${1:page name}\", action: \"screenshot\", screenshotName: \"${1:page-name}.png\" }$0"
+    ],
+    "description": "Framework screenshot step"
+  },
+
+  "Framework Step — CSS Locator": {
+    "prefix": "fwcss",
+    "body": [
+      "{ label: \"${3:Click} ${2:element name}\", action: \"${3|click,fill,assertVisible,dropdown|}\", locator: \"${1:#id}\"${4:, value: \"${5}\"} }$0"
+    ],
+    "description": "Framework step with CSS locator"
+  },
+
+  "Framework runSteps block": {
+    "prefix": "fwrun",
+    "body": [
+      "const result = await runSteps(page, [",
+      "  { label: \"Navigate to ${1:page}\", action: \"navigate\", expectedUrl: `\\${BASE}/${1:path}` },",
+      "  { label: \"Verify ${2:element} visible\", action: \"assertVisible\", codegenLocator: \"${3:getByRole('heading', { name: '$2' })}\" },",
+      "  $0",
+      "], {",
+      "  name: \"${4:Workflow Name}\",",
+      "  suite: \"${5|smoke,sanity,regression,general|}\",",
+      "  stopOnFailure: true",
+      "});",
+      "expect(result.failed).toBe(0);"
+    ],
+    "description": "Full runSteps workflow block"
+  },
+
+  "Framework Step — healHint": {
+    "prefix": "fwheal",
+    "body": [
+      "{ label: \"${3:Click} ${2:element}\", action: \"${3|click,fill,assertVisible|}\", codegenLocator: \"${1}\", healHint: \"${4:pierce/selector or #stable-id}\" }$0"
+    ],
+    "description": "Framework step with manual heal hint for shadow DOM or dynamic IDs"
+  },
+
+  "Framework Step — assertPattern": {
+    "prefix": "fwpattern",
+    "body": [
+      "{ label: \"Verify ${2:field} format\", action: \"assertPattern\", locator: \"${1}\", pattern: \"${3:^\\\\d{4}-\\\\d+$}\" }$0"
+    ],
+    "description": "Framework assertPattern step for regex validation"
+  }
+}

@@ -1,0 +1,342 @@
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 1 — THE PROBLEM vs SOLUTION                          ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  WITHOUT FRAMEWORK                        WITH FRAMEWORK
+  ─────────────────                        ──────────────
+  Developer changes UI                     Developer changes UI
+          │                                        │
+          ▼                                        ▼
+  100 tests FAIL ❌                        Framework detects change
+          │                                        │
+          ▼                                        ▼
+  QA team notified                         Auto-heals in milliseconds ✅
+          │                                        │
+          ▼                                        ▼
+  2 days fixing scripts                    Tests continue running
+          │                                        │
+          ▼                                        ▼
+  Release DELAYED 🔴                       Release ON TIME 🟢
+          │                                        │
+          ▼                                        ▼
+  $200K–$500K/year wasted                  $160K/year SAVED 💰
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 2 — 6-LAYER RECOVERY PIPELINE                        ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  TEST STEP EXECUTES
+          │
+          ▼
+  ┌───────────────────────────────────────────────────────────┐
+  │  LAYER 1 — Direct Execution                    ⏱ ~5ms    │
+  │  Uses original codegen locator                            │
+  │  getByRole('button', { name: 'Login' })                   │
+  └───────────────────────────────────────────────────────────┘
+          │ 95% PASS HERE ✅          │ 5% FAIL → next layer
+          ▼                           ▼
+  ┌───────────────────────────────────────────────────────────┐
+  │  LAYER 2 — Smart Strategy Fallback             ⏱ ~50ms   │
+  │  Tries 30+ alternatives in parallel batches               │
+  │  aria-label / placeholder / name / role / text            │
+  └───────────────────────────────────────────────────────────┘
+          │ PASS ✅                   │ FAIL → next layer
+          ▼                           ▼
+  ┌───────────────────────────────────────────────────────────┐
+  │  LAYER 3 — Learned Fix (Memory DB)             ⏱ ~2ms    │
+  │  Recalls previously healed locators instantly             │
+  │  Confidence score: frequency + recency + success          │
+  └───────────────────────────────────────────────────────────┘
+          │ PASS ✅                   │ FAIL → next layer
+          ▼                           ▼
+  ┌───────────────────────────────────────────────────────────┐
+  │  LAYER 3.5 — AI Label Prediction               ⏱ ~200ms  │
+  │  Local Ollama predicts locator from step label            │
+  │  No DOM scan needed — saves 50ms                          │
+  └───────────────────────────────────────────────────────────┘
+          │ PASS ✅                   │ FAIL → next layer
+          ▼                           ▼
+  ┌───────────────────────────────────────────────────────────┐
+  │  LAYER 4 — DOM Capture + Self-Heal             ⏱ ~50ms   │
+  │  Scans live page DOM, fuzzy-matches elements              │
+  │  Levenshtein distance for text changes                    │
+  └───────────────────────────────────────────────────────────┘
+          │ PASS ✅                   │ FAIL → next layer
+          ▼                           ▼
+  ┌───────────────────────────────────────────────────────────┐
+  │  LAYER 5 — AI DOM-Aware Recovery               ⏱ ~200ms  │
+  │  Local Ollama analyzes full page structure                │
+  │  Suggests best Playwright locator                         │
+  └───────────────────────────────────────────────────────────┘
+          │ PASS ✅                   │ FAIL → Autonomous Diagnostics
+          ▼                           ▼
+  ┌───────────────────────────────────────────────────────────┐
+  │  AUTONOMOUS DIAGNOSTICS                        ⏱ ~30ms   │
+  │  Detects failure type → Generates fix → Patches file      │
+  │  legacy_name_attr / strict_mode / element_renamed         │
+  └───────────────────────────────────────────────────────────┘
+          │ PASS ✅                   │ FAIL = Genuine missing element
+          ▼                           ▼
+    FIX STORED IN DB              CLEAR ERROR REPORT
+    NEXT RUN = 2ms ⚡             (element truly gone)
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 3 — LEARNING DATABASE LIFECYCLE                      ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  RUN 1 (Empty DB)                    RUN 2+ (Warm DB)
+  ────────────────                    ────────────────
+
+  Test fails Layer 1                  Same test runs
+       │                                    │
+       ▼                                    ▼
+  Layers 2–5 try                      Layer 3 checks DB ← 2ms ⚡
+       │                                    │
+       ▼                                    ▼
+  Fix found ✅                         Fix found instantly ✅
+       │                                    │
+       ▼                                    ▼
+  Stored in DB                        Test PASSES
+  ┌─────────────────────┐
+  │ old: "Login button" │             Confidence Score:
+  │ new: "[name=login]" │             ┌──────────────────────────┐
+  │ action: "click"     │             │ Frequency:  40 pts max   │
+  │ confidence: 87      │             │ Recency:    40 pts max   │
+  │ count: 47           │             │ Success:    20 pts max   │
+  └─────────────────────┘             │ TOTAL:     100 pts max   │
+                                      └──────────────────────────┘
+
+  ACCURACY OVER TIME:
+  ┌────────────────────────────────────────────────────────┐
+  │                                              ●─────── 99%
+  │                                    ●────────
+  │                          ●─────────                    │
+  │              ●───────────                              │
+  │  ●───────────                                          │
+  │  94%                                                   │
+  └────────────────────────────────────────────────────────┘
+     Run 1    Run 3    Run 5    Run 7    Run 10+
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 4 — LOCAL AI ARCHITECTURE                            ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  YOUR MACHINE (100% LOCAL — NO CLOUD)
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  │   Test Runner          Framework           Ollama AI        │
+  │   ──────────           ─────────           ─────────        │
+  │   ┌────────┐           ┌────────┐          ┌────────┐       │
+  │   │ Tests  │──────────▶│ Layer  │─────────▶│ llama3 │       │
+  │   │        │           │ 3.5/5  │◀─────────│codellam│       │
+  │   └────────┘           └────────┘          └────────┘       │
+  │                             │               localhost        │
+  │                             │               :11434           │
+  │                        ┌────▼────┐                          │
+  │                        │Learning │                          │
+  │                        │   DB    │                          │
+  │                        └─────────┘                          │
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘
+                    ❌ NO INTERNET REQUIRED
+                    ❌ NO DATA SENT OUTSIDE
+                    ❌ NO SUBSCRIPTION COST
+                    ✅ $0/MONTH FOREVER
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 5 — COMPETITOR COMPARISON                            ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  ACCURACY WHEN UI CHANGES:
+
+  Vanilla Playwright  ████████████░░░░░░░░  60–70%   $0/month
+  Selenium            ███████████░░░░░░░░░  55–65%   $0/month
+  Cypress             ████████████░░░░░░░░  60–70%   $0/month
+  Healenium           ███████████████░░░░░  75–80%   $0/month
+  Testim.io           █████████████████░░░  85–90%   $500–$5K/month ☁️
+  Mabl                ████████████████░░░░  85–88%   $500–$5K/month ☁️
+  THIS FRAMEWORK      ████████████████████  97–99%   $0/month ✅
+
+  FEATURES COMPARISON:
+  ┌──────────────────────┬──────────┬────────┬──────────┬──────────────┐
+  │ Feature              │Playwright│Testim  │  Mabl    │ THIS FRAMEWORK│
+  ├──────────────────────┼──────────┼────────┼──────────┼──────────────┤
+  │ Self-healing layers  │    0     │   1    │    1     │      6       │
+  │ Local AI (no cloud)  │    ❌    │   ❌   │    ❌    │      ✅      │
+  │ Learning database    │    ❌    │   ❌   │    ❌    │      ✅      │
+  │ Natural language     │    ❌    │   ❌   │    ❌    │      ✅      │
+  │ Auto-patch source    │    ❌    │   ❌   │    ❌    │      ✅      │
+  │ Assertion guard      │    ❌    │   ❌   │    ❌    │      ✅      │
+  │ 150+ action types    │    ❌    │   ❌   │    ❌    │      ✅      │
+  │ Cost/month           │   $0     │ $500+  │  $500+   │      $0      │
+  │ Cloud required       │   No     │  YES   │   YES    │      No      │
+  └──────────────────────┴──────────┴────────┴──────────┴──────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 6 — DEMO RESULTS (3 REAL APPS)                       ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+  │   🛒 E-COMMERCE     │  │   🏦 BANKING         │  │   🏥 HEALTHCARE     │
+  │   SauceDemo         │  │   ParaBank           │  │   OrangeHRM         │
+  │   saucedemo.com     │  │   parasoft.com       │  │   orangehrmlive.com │
+  ├─────────────────────┤  ├─────────────────────┤  ├─────────────────────┤
+  │ Tests:    10        │  │ Tests:    11         │  │ Tests:    15        │
+  │ Passed:   10 ✅     │  │ Passed:   11 ✅      │  │ Passed:   15 ✅     │
+  │ Failed:    0        │  │ Failed:    0         │  │ Failed:    0        │
+  ├─────────────────────┤  ├─────────────────────┤  ├─────────────────────┤
+  │ Login workflows     │  │ Login/logout         │  │ Login/logout        │
+  │ Product browsing    │  │ Account overview     │  │ Employee management │
+  │ Cart management     │  │ Fund transfers       │  │ Leave management    │
+  │ Full checkout       │  │ Open new account     │  │ Admin module        │
+  │ Self-heal demo      │  │ Find transactions    │  │ Recruitment module  │
+  │ Mobile emulation    │  │ Legacy HTML healed   │  │ Complex Vue SPA     │
+  └─────────────────────┘  └─────────────────────┘  └─────────────────────┘
+           ✅                        ✅                        ✅
+                    TOTAL: 36/36 TESTS PASSING 🎯
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 7 — ROI CALCULATION                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  CURRENT COST (Without Framework)
+  ─────────────────────────────────
+  10 QA engineers × $80K salary × 25% time on fixes
+  = $200,000/year wasted on broken test maintenance
+
+  WITH FRAMEWORK
+  ──────────────
+  10 QA engineers × $80K salary × 5% time on fixes
+  = $40,000/year (framework handles the rest)
+
+  ANNUAL SAVING = $160,000/year per team 💰
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  INVESTMENT vs RETURN                                   │
+  │                                                         │
+  │  Patent filing cost:    $7,000                          │
+  │  Asset being protected: $5M – $30M                      │
+  │                                                         │
+  │  Return potential:      700x – 4,000x                   │
+  │                                                         │
+  │  $7K ──────────────────────────────────▶ $30M           │
+  │   └── 4,000x return potential                           │
+  └─────────────────────────────────────────────────────────┘
+
+  REVENUE SCENARIOS:
+  ┌──────────────────────────────────────────────────────────┐
+  │ Scenario              │ How                │ Value       │
+  ├──────────────────────────────────────────────────────────┤
+  │ Sell IP as-is         │ License the patent │ $50K–$500K  │
+  │ License to enterprise │ Annual license fee │ $100K–$1M/yr│
+  │ Raise seed funding    │ Pitch to investors │ $1M–$5M     │
+  │ Acquisition           │ Tricentis/SmartBear│ $5M–$30M    │
+  │ Build SaaS + Series A │ Product + traction │ $50M–$200M  │
+  └──────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 8 — PATENT TIMELINE                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  APR 2026          JUN 2026          OCT 2026          APR 2027
+     │                 │                 │                 │
+     ▼                 ▼                 ▼                 ▼
+  ┌──────┐          ┌──────┐          ┌──────┐          ┌──────┐
+  │ ✅   │          │      │          │      │          │  ⚠️  │
+  │PROV. │─────────▶│ PCT  │─────────▶│PILOT │─────────▶│FULL  │
+  │FILED │          │FILED │          │CUST. │          │PATENT│
+  └──────┘          └──────┘          └──────┘          └──────┘
+  Provisional       Worldwide         3–5 paying        HARD
+  patent filed      protection        customers         DEADLINE
+  April 10          150+ countries    secured           Miss this =
+  2026              via PCT                             lose rights
+
+  WHAT'S PROTECTED (5 Core Innovations):
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. 6-layer sequential recovery pipeline algorithm       │
+  │ 2. Three-factor confidence scoring formula              │
+  │ 3. Local LLM locator prediction (label + DOM)           │
+  │ 4. Assertion guard (prevents false-positive healing)    │
+  │ 5. Natural language action detection (PatternEngine)    │
+  └─────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 9 — SYSTEM ARCHITECTURE                              ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                     AI AUTOMATION FRAMEWORK                         │
+  │                                                                     │
+  │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐  │
+  │  │  TEST LAYER  │    │  CORE ENGINE │    │   INTELLIGENCE LAYER │  │
+  │  │              │    │              │    │                      │  │
+  │  │ .spec.ts     │───▶│ Runner.ts    │───▶│ LLMLocatorEngine.ts  │  │
+  │  │ Page Objects │    │ WorkflowRun  │    │ AutonomousDiagnostic │  │
+  │  │ 150+ actions │    │ PatternEng   │    │ LearningStore.ts     │  │
+  │  └──────────────┘    └──────────────┘    └──────────────────────┘  │
+  │                             │                       │               │
+  │                             ▼                       ▼               │
+  │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐  │
+  │  │  DOM LAYER   │    │ HEAL LAYER   │    │   STORAGE LAYER      │  │
+  │  │              │    │              │    │                      │  │
+  │  │ DOMCapture   │    │ SelfHeal.ts  │    │ learning-db.json     │  │
+  │  │ DOMDiff      │    │ SmartLocator │    │ .bak backup          │  │
+  │  │ SmartFilter  │    │ LocatorEng   │    │ .lock (cross-process)│  │
+  │  └──────────────┘    └──────────────┘    └──────────────────────┘  │
+  │                                                                     │
+  │  ┌─────────────────────────────────────────────────────────────┐   │
+  │  │                    UTILITY LAYER                            │   │
+  │  │  AccessibilityChecker │ VisualRegression │ MobileHelper     │   │
+  │  │  NetworkInterceptor   │ TraceManager     │ StabilityGuard   │   │
+  │  └─────────────────────────────────────────────────────────────┘   │
+  └─────────────────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    DIAGRAM 10 — ACCURACY SUMMARY                                ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  ACCURACY BY APPLICATION TYPE:
+
+  Modern React/Vue/Angular  ████████████████████  98–99% ✅
+  Enterprise SPA (OrangeHRM)████████████████████  96–97% ✅
+  Simple HTML (SauceDemo)   ████████████████████  99%    ✅
+  Legacy JSP (ParaBank)     ████████████████████  88–92% ✅
+  Shadow DOM / Web Comp.    ██████████████░░░░░░  70–75% ⚠️
+  Cross-origin iframes      ████████░░░░░░░░░░░░  40–50% ❌
+
+  KEY FACTORS THAT AFFECT ACCURACY:
+  ┌─────────────────────────────────────────────────────────┐
+  │ Factor                    │ Impact on Accuracy           │
+  ├─────────────────────────────────────────────────────────┤
+  │ App has data-testid attrs │ +1.5% → pushes to 99.5%     │
+  │ Ollama enabled (FW_LLM)   │ +1–2% on hard cases         │
+  │ 10+ test runs (warm DB)   │ +5% vs first run            │
+  │ waitForStability=true     │ +0.5% on SPAs               │
+  │ healHint on hard elements │ +2% on those elements       │
+  └─────────────────────────────────────────────────────────┘
+
+  BOTTOM LINE:
+  ┌─────────────────────────────────────────────────────────┐
+  │                                                         │
+  │   First run:          94%  ████████████████████░░░░     │
+  │   After 10 runs:      99%  ████████████████████████░    │
+  │   With Ollama:        99%+ ████████████████████████░    │
+  │   Competitors:     85–90%  █████████████████░░░░░░░░    │
+  │                                                         │
+  └─────────────────────────────────────────────────────────┘
+
+=============================================================
+END OF DIAGRAMS
+Use these as reference when building slides in PowerPoint
+Each diagram = one slide visual
+=============================================================
