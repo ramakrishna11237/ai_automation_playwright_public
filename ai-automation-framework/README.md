@@ -1,6 +1,6 @@
 # AI Automation Framework
 
-Enterprise-grade test automation built on Playwright with intelligent self-healing, persistent learning, and local AI integration.
+Enterprise-grade test automation built on Playwright with self-healing locators, learning DB, 7-layer recovery, local LLM integration, and autonomous diagnostics.
 
 ## Quick Start
 
@@ -30,19 +30,47 @@ npm run report              # open HTML report
 
 ---
 
-## Self-Healing
+## Architecture — 7-Layer Recovery
 
-When a locator fails, the framework automatically finds the correct element and remembers the fix for next time:
+Every step goes through 7 layers + autonomous diagnostics before failing:
 
-```typescript
-// Your test stays the same — framework handles UI changes automatically
-await runSteps(page, [
-  { label: "Click Login", action: "click", codegenLocator: "getByRole('button', { name: 'Login' })" }
-]);
-// If the button changes → framework finds it → stores fix → next run is instant
+```
+Step executes
+  │
+  ├─ Layer 1:   Direct execution + retry/backoff          ~5ms    ← 95% of steps stop here
+  │
+  ├─ Layer 2a:  SmartLocatorEngine (confidence-scored)    ~50ms   ← 30+ candidates, context-aware
+  │             data-testid(100) → id(95) → aria-label(90) → role+name(85) → label(80) → ...
+  │
+  ├─ Layer 2b:  Batch strategy fallback (parallel race)   ~50ms   ← getByRole, getByLabel, CSS variants
+  │
+  ├─ Layer 3:   Learned fix (learning-db.json cache)      ~2ms    ← previously healed locators
+  │
+  ├─ Layer 3.5: LLM label prediction (no DOM needed)      ~200ms  ← LLM predicts locator from step label only
+  │
+  ├─ Layer 4:   DOM capture + self-heal                   ~50ms   ← targeted container snapshot + fuzzy match
+  │
+  ├─ Layer 5:   LLM locator (local Ollama + DOM)          ~200ms  ← LLM reads DOM, suggests locator → cached to Layer 3
+  │
+  └─ Autonomous Diagnostics                               ~100ms  ← DOM analysis, failure classification, auto-patch
 ```
 
-Fixes are stored in `learning-db.json` and reused automatically on every subsequent run.
+**Confidence scoring in Layer 2a:**
+
+| Score | Strategy | Example |
+|---|---|---|
+| 100 | data-testid / data-cy / data-qa | `[data-testid="submit-btn"]` |
+| 95 | id attribute | `#username` |
+| 90 | aria-label | `[aria-label="Username"]` |
+| 85 | role + name | `getByRole('button', { name: 'Login' })` |
+| 80 | label association | `getByLabel('Email address')` |
+| 75 | name attribute | `[name="email"]` |
+| 70 | placeholder | `getByPlaceholder('Enter email')` |
+| 65 | exact text | `getByText('Submit', { exact: true })` |
+| 55 | title attribute | `[title="Close dialog"]` |
+| 50 | partial text | `getByText('Submit', { exact: false })` |
+| 40 | regex text | `getByText(/submit/i)` |
+| 20 | tag fallback | `button:has-text("Submit")` |
 
 ---
 
@@ -67,21 +95,21 @@ test("login and navigate", async ({ page }) => {
 
 ```typescript
 await runSteps(page, steps, {
-  name:                        "My Workflow",
-  suite:                       "regression",    // smoke | sanity | regression | general
-  stopOnFailure:               true,            // halt on first hard failure
-  screenshotOnFailure:         true,            // auto screenshot on failure
-  screenshotEachStep:          false,           // screenshot every step
+  name:                       "My Workflow",
+  suite:                      "regression",     // smoke | sanity | regression | general
+  stopOnFailure:              true,             // halt on first hard failure
+  screenshotOnFailure:        true,             // auto screenshot on failure
+  screenshotEachStep:         false,            // screenshot every step
   waitForStabilityAfterAction: true,            // wait for page stable after clicks
-  workflowRetries:             1,              // retry entire workflow on failure
-  maxWorkflowMs:               60000,          // hard budget — stops runaway tests
+  workflowRetries:            1,               // retry entire workflow on failure
+  maxWorkflowMs:              60000,           // hard budget — stops runaway tests
 });
 ```
 
 ### Soft Assertions
 
 ```typescript
-// Soft failures are recorded but workflow continues
+// Soft failures are recorded but workflow continues — like Playwright expect.soft()
 { label: "Check banner", action: "assertVisible", codegenLocator: "...", soft: true }
 ```
 
@@ -95,6 +123,24 @@ const [loginResult, setupResult] = await runStepsParallel([
   { page: page2, steps: setupSteps,  options: { name: "Setup" } },
 ]);
 ```
+
+---
+
+## Self-Healing
+
+When a locator fails, the framework automatically tries alternatives and stores the fix:
+
+```json
+// learning-db.json — auto-updated, never edit manually
+{
+  "old": "Click Login button",
+  "new": "getByRole('button', { name: 'Login' })",
+  "action": "click",
+  "count": 50
+}
+```
+
+Healing is **blocked for assertions** — a `assertVisible` step will never heal to a button or link (prevents false passes).
 
 ---
 
@@ -126,6 +172,7 @@ import { TraceManager } from "../src/utils/TraceManager";
 test("debug failing workflow", async ({ page, context }) => {
   const trace = new TraceManager(context);
 
+  // Auto-saves trace only on failure, discards on pass
   await trace.wrap("login-flow", async () => {
     await runSteps(page, steps);
   });
@@ -134,6 +181,8 @@ test("debug failing workflow", async ({ page, context }) => {
 // Open the trace:
 // npx playwright show-trace test-results/traces/login-flow-<timestamp>.zip
 ```
+
+Traces include: full action timeline, DOM snapshots before/after every action, network requests, console logs, screenshots.
 
 ---
 
@@ -150,6 +199,7 @@ const guard = new StabilityGuard(page, {
   }
 });
 
+// Auto re-login if session expires mid-test
 await guard.withSessionRecovery(
   () => navPage.goToModule("Leave"),
   () => navPage.goToModule("Leave")
@@ -179,7 +229,9 @@ import { AccessibilityChecker } from "../src/utils/AccessibilityChecker";
 
 const a11y = new AccessibilityChecker(page);
 const result = await a11y.audit();
-await a11y.assertNoViolations();
+// Checks: missing button labels, images without alt, inputs without labels, empty links
+
+await a11y.assertNoViolations(); // throws if violations found
 ```
 
 ---
@@ -190,26 +242,8 @@ await a11y.assertNoViolations();
 import { VisualRegression } from "../src/utils/VisualRegression";
 
 const visual = new VisualRegression(page);
-await visual.captureBaseline("login-page");
-const result = await visual.compare("login-page");
-```
-
----
-
-## Security
-
-```typescript
-import { SecurityEnforcer } from "../src/security/SecurityEnforcer";
-
-// Scan locator for injection risks
-const result = SecurityEnforcer.scanLocator(locator);
-if (!result.safe) console.warn(result.risks);
-
-// Sanitize before use
-const safe = SecurityEnforcer.sanitizeLocator(locator);
-
-// Validate URLs
-SecurityEnforcer.validateUrl(url); // only allows http/https
+await visual.captureBaseline("login-page");          // run once
+const result = await visual.compare("login-page");   // compare on every run
 ```
 
 ---
@@ -226,12 +260,60 @@ All settings via environment variables (`.env`):
 | `HEADLESS` | `true` | Run headless |
 | `FW_TIMEOUT` | `5000` | Action timeout (ms) |
 | `FW_WAIT_TIMEOUT` | `5000` | Element wait timeout (ms) |
+| `FW_STRATEGY_TIMEOUT` | `1000` | Per-strategy timeout in Layer 2 (ms) |
 | `FW_MAX_RETRIES` | `3` | Retry attempts per action |
 | `FW_LEARNING` | `true` | Enable self-healing learning |
 | `FW_LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
-| `FW_LLM` | `false` | Enable AI recovery (requires Ollama) |
-| `FW_LLM_MODEL` | `llama3` | Ollama model name |
-| `FW_LLM_TIMEOUT_MS` | `8000` | Max ms to wait for AI response |
+| `FW_LLM` | `false` | Enable Layer 5 LLM recovery (requires Ollama) |
+| `FW_LLM_MODEL` | `llama3` | Ollama model name (`llama3`, `codellama`, `mistral`) |
+| `FW_LLM_TIMEOUT_MS` | `8000` | Max ms to wait for LLM response |
+
+---
+
+## Project Structure
+
+```
+src/
+├── core/
+│   ├── Runner.ts                  # 7-layer step execution engine
+│   └── WorkflowRunner.ts          # Workflow orchestration, retries, budget
+├── engine/
+│   ├── ActionRouter.ts            # 150+ action types
+│   ├── ActionRouterExtensions.ts  # 35 deep automation actions
+│   ├── ActionRouterExtensions2.ts # 63 additional actions
+│   ├── LLMLocatorEngine.ts        # Layer 3.5 + Layer 5 — local Ollama LLM
+│   ├── AutonomousDiagnostics.ts   # Autonomous failure analysis + auto-patch
+│   ├── SmartLocatorEngine.ts      # Layer 2a — confidence-scored locator selection
+│   ├── LocatorEngine.ts           # Layer 2b — locator strategy generation
+│   ├── PatternEngine.ts           # Action detection from step labels
+│   ├── RetryEngine.ts             # Exponential backoff with jitter
+│   ├── FrameHandler.ts            # Automatic iframe + shadow DOM detection
+│   └── SmartWait.ts               # Stability waits
+├── healing/
+│   └── SelfHeal.ts                # Layer 4 — DOM-based self-healing with assertion guard
+├── learning/
+│   ├── LearningStore.ts           # Layer 3 — persistent fix storage with in-memory cache
+│   └── FixApplier.ts              # Best fix lookup
+├── dom/
+│   ├── DOMCapture.ts              # Targeted container-scoped DOM capture
+│   ├── DOMDiff.ts                 # Before/after DOM diff
+│   └── SmartDOMFilter.ts          # Interactive element extraction
+├── pages/
+│   ├── BasePage.ts                # Shared page actions
+│   └── LoginPage.ts
+└── utils/
+    ├── MobileHelper.ts            # Device emulation, touch, swipe, orientation
+    ├── TraceManager.ts            # Playwright trace recording
+    ├── StabilityGuard.ts          # Session recovery, pre/post conditions
+    ├── NetworkInterceptor.ts
+    ├── AccessibilityChecker.ts
+    ├── VisualRegression.ts
+    ├── ApiClient.ts
+    ├── SessionManager.ts
+    ├── ParallelSession.ts
+    ├── StepObserver.ts            # Full step observability with screenshots
+    └── TestDataManager.ts
+```
 
 ---
 
@@ -267,15 +349,22 @@ registerAction("selectSelect2", async (page, step) => {
 
 ---
 
-## Local AI Setup (Optional)
+## Layer 5 + 3.5 — LLM Self-Healing (Local Ollama)
 
-The framework supports local AI for enhanced recovery. Disabled by default.
+Two LLM layers provide AI-powered recovery:
+
+- **Layer 3.5** — predicts the locator from the step label alone (no DOM needed, ~200ms)
+- **Layer 5** — reads the sanitized DOM snapshot and suggests the correct locator (~200ms)
+
+Both results are stored in `learning-db.json` so the next run uses **Layer 3** (2ms) instead.
+
+### Setup
 
 ```bash
 # 1. Install Ollama (free, runs locally)
 # https://ollama.com
 
-# 2. Pull a model (one time)
+# 2. Pull a model (one time, ~4GB)
 ollama pull llama3
 
 # 3. Enable in .env
@@ -283,10 +372,31 @@ FW_LLM=true
 FW_LLM_MODEL=llama3
 ```
 
-All AI calls go to `localhost:11434` only — no external network requests, no data sent outside your machine.
+### How it works
 
----
+```
+Layer 4 fails → Layer 3.5: LLM predicts from step label (no DOM)
+             → Layer 5:   LLM reads sanitized DOM snapshot
+             → Suggests best Playwright locator
+             → Framework tries it
+             → Success: stored in learning-db.json
+             → Next run: Layer 3 finds it in 2ms
+             → All layers fail → Autonomous Diagnostics classifies + auto-patches
+```
 
-## License
+## Autonomous Diagnostics
 
-MIT
+When all 7 layers fail, Autonomous Diagnostics runs automatically:
+
+- Classifies the failure type (locator stale, element hidden, timing, app error, etc.)
+- Analyzes the DOM to find the best candidate element
+- Suggests a fix with confidence score
+- Can **auto-patch** the test file with the corrected locator
+- No LLM required — pure DOM analysis
+
+### Security
+- Calls `localhost:11434` **only** — no external network requests
+- DOM is sanitized before sending — strips passwords, tokens, auth values
+- Disabled by default (`FW_LLM=false`) — opt-in only
+- Max 2000 chars of DOM sent — minimal exposure
+- Assertion guard: LLM cannot heal assertion steps to wrong elements

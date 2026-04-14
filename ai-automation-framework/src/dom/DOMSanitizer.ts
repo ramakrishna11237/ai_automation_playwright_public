@@ -1,1 +1,37 @@
-// Proprietary — not included in public release. Contact: ramakrishna11237@gmail.com
+export function sanitizeDOM(html: string): string {
+  if (!html) return "";
+
+  return html
+    // Strip script tags
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    // Strip inline event handlers
+    .replace(/on\w+="[^"]*"/gi, "")
+    // Strip hidden input values entirely
+    .replace(/(<input[^>]+type=["']hidden["'][^>]*?)\svalue=["'][^"']*["']/gi, "$1")
+    // Strip sensitive data-* attribute values
+    .replace(/\bdata-(auth|token|key|secret|password|email|ssn|card|user|session)[^=]*=["'][^"']*["']/gi, "data-[REDACTED]=""")
+    // Strip tokens/secrets from URLs (href, src, action)
+    .replace(/([?&](token|auth|key|secret|password|email|session_id|csrf)[^=]*=)[^&"'\s]*/gi, "$1[REDACTED]")
+    // Strip inline token/secret assignments
+    .replace(/\b(token|apikey|api_key|auth_token|auth|secret|password)\s*=\s*\S+/gi, "$1=REMOVED")
+    // Strip sensitive attribute values
+    .replace(/value=["'][^"'{]*(?:token|apikey|api_key|auth_token|secret|password)[^"']*["']/gi, 'value="REMOVED"')
+    // Strip Bearer tokens
+    .replace(/\b(Authorization|X-API-Key|X-Auth-Token):\s*Bearer\s+\S+/gi, "$1: Bearer REMOVED")
+    // Strip SSN patterns (123-45-6789)
+    .replace(/\b\d{3}-\d{2}-\d{4}\b/g, "[SSN-REDACTED]")
+    // Strip credit card patterns (16 digits with optional dashes/spaces)
+    .replace(/\b(?:\d{4}[\s-]?){3}\d{4}\b/g, "[CARD-REDACTED]")
+    // Strip email addresses
+    .replace(/\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, "[EMAIL-REDACTED]")
+    // Strip phone numbers (various formats)
+    .replace(/\b(\+?\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g, "[PHONE-REDACTED]")
+    // Strip salary / currency amounts
+    .replace(/\$\s?\d{1,3}(,\d{3})*(\.\d{2})?/g, "[AMOUNT-REDACTED]")
+    // Strip national ID / passport patterns
+    .replace(/\b[A-Z]{1,2}\d{6,9}\b/g, "[ID-REDACTED]")
+    // Strip IP addresses
+    .replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, "[IP-REDACTED]")
+    // Cap total length — never send more than needed
+    .slice(0, 3000);
+}
